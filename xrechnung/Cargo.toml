@@ -1,0 +1,18 @@
+[package]
+name = "xrechnung"
+description = "Creation of invoices in the XRechnung format, a German standard for electronic invoicing."
+categories = ["finance"]
+keywords = ["invoice", "xrechnung", "germany"]
+license = "MPL-2.0"
+version = "0.1.0"
+edition = "2024"
+authors = ["Adrian Winterstein <adrian@winterstein.biz>"]
+repository = "https://codeberg.org/winterstein/xrechnung"
+exclude = ["README.tpl"]
+
+
+[dependencies]
+chrono = "0.4.41"
+quick-xml = "0.37.3"
+serde = { version = "1.0.219", features = ["derive"] }
+toml = "0.8.22"
