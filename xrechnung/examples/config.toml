@@ -1,0 +1,43 @@
+currency = "EUR"
+vat_percent = 19.0
+
+[supplier]
+name = "Hans Muster"
+tax_identification = "DE123456789"
+
+phone = "+4932123456789"
+email = "mail@supplier.example.com"
+iban = "DE12345678111111111100"
+bic = "DABCDEFFXXX"
+
+[supplier.address]
+address_line = "Supplier Street 1"
+city = "Example City"
+post_code = "54321"
+country_code = "DE"
+
+[[buyer]]
+name = "Client Company"
+tax_identification = "DE111111111"
+email = "mail@client1.example.com"
+reference = "12345"
+due_after_days = 20
+
+[buyer.address]
+address_line = "Example Street 42"
+city = "Example City"
+post_code = "54321"
+country_code = "DE"
+
+[[buyer]]
+name = "Another Client"
+tax_identification = "DE111111111"
+email = "mail@client2.example.com"
+reference = "12349"
+due_after_days = 30
+
+[buyer.address]
+address_line = "Another Street 10"
+city = "Example City"
+post_code = "54321"
+country_code = "DE"
