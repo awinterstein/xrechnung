@@ -1,5 +1,9 @@
 #!/bin/bash -e
 
+cd "$(dirname "$0")" # Make sure to be in the directory where the script is located
+
+# Install the cargo readme plugin if it is not yet installed
+if ! cargo --list | grep -q readme; then cargo install cargo-readme; fi
 
 # Generate README from the crate documentation, but remove the example
 # configuration, because the include does not work with "cargo readme"
