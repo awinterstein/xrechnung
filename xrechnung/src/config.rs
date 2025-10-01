@@ -75,7 +75,7 @@ pub struct Buyer {
 
     /// The tax identification (e.g., vat number) of the buyer. This is a unique identifier assigned to the buyer by
     /// the tax office.
-    pub tax_identification: String,
+    pub tax_identification: Option<String>,
 
     /// The address of the buyer.
     pub address: Address,

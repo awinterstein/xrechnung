@@ -67,7 +67,10 @@ fn create_supplier_element(supplier: &Supplier) -> XmlElement {
                 create_endpoint_id_element(ENDPOINT_SCHEME_ID, &supplier.email),
                 create_address_element(&supplier.address),
                 create_party_tax_scheme_element(&supplier.tax_identification),
-                create_legal_entity_element(&supplier.name, &supplier.tax_identification),
+                create_legal_entity_element(
+                    &supplier.name,
+                    Some(supplier.tax_identification.as_ref()),
+                ),
                 create_contact_element(&supplier.name, &supplier.phone, &supplier.email),
             ]),
         )]),
@@ -85,7 +88,7 @@ fn create_buyer_element(buyer: &Buyer) -> XmlElement {
             Some(vec![
                 create_endpoint_id_element(ENDPOINT_SCHEME_ID, &buyer.email),
                 create_address_element(&buyer.address),
-                create_legal_entity_element(&buyer.name, &buyer.tax_identification),
+                create_legal_entity_element(&buyer.name, buyer.tax_identification.as_deref()),
             ]),
         )]),
     )
@@ -263,15 +266,17 @@ fn create_classified_tax_category_element(vat_percent: f32) -> XmlElement {
     )
 }
 
-fn create_legal_entity_element(name: &str, id: &str) -> XmlElement {
-    XmlElement::new(
-        "cac:PartyLegalEntity",
-        None,
-        Some(vec![
-            XmlElement::new_leaf("cbc:RegistrationName", None, name),
-            XmlElement::new_leaf("cbc:CompanyID", None, id),
-        ]),
-    )
+fn create_legal_entity_element(name: &str, id: Option<&str>) -> XmlElement {
+    let mut children = vec![XmlElement::new_leaf("cbc:RegistrationName", None, name)];
+    if id.is_some() {
+        children.push(XmlElement::new_leaf(
+            "cbc:CompanyID",
+            None,
+            id.as_ref().unwrap(),
+        ));
+    }
+
+    XmlElement::new("cac:PartyLegalEntity", None, Some(children))
 }
 
 fn create_contact_element(name: &str, phone: &str, email: &str) -> XmlElement {
