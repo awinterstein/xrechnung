@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 
 use crate::config::{Address, Buyer, Supplier};
-use crate::data::{Bill, InvoiceHoursElement, Period};
+use crate::data::{Bill, InvoiceLineElement, Period};
 use crate::xml_writer::XmlElement;
 
 const XMLNS_UBL: &'static str = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2";
@@ -14,7 +14,8 @@ const CUSTOMIZATION_ID: &'static str =
 const PROFILE_ID: &'static str = "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0";
 const PAYMENT_MEANS_CODE: &'static str = "42"; // payment to bank account
 const ENDPOINT_SCHEME_ID: &'static str = "EM"; // use email addresses as the contact points
-const QUANTITY_UNIT_CODE: &'static str = "HUR"; // HUR is code for 'hour' from Codes for Units of Measure used in International Trade
+const QUANTITY_UNIT_CODE_HOUR: &'static str = "HUR"; // HUR is code for 'hour' from Codes for Units of Measure used in International Trade
+const QUANTITY_UNIT_CODE_ONE: &'static str = "C62"; // C62 is code for 'one' (no unit) from Codes for Units of Measure used in International Trade
 
 /// Rounds a floating point number to two decimal places and formats it as a string.
 fn rounded_string(input: f32) -> String {
@@ -295,7 +296,7 @@ fn create_invoice_hours_element(
     id: &str,
     currency: &str,
     vat_percent: f32,
-    element: InvoiceHoursElement,
+    element: InvoiceLineElement,
 ) -> Result<XmlElement, Box<dyn std::error::Error>> {
     let mut line_element = XmlElement::new(
         "cac:InvoiceLine",
@@ -304,13 +305,13 @@ fn create_invoice_hours_element(
             XmlElement::new_leaf("cbc:ID", None, id),
             XmlElement::new_leaf(
                 "cbc:InvoicedQuantity",
-                Some(vec![("unitCode", QUANTITY_UNIT_CODE)]),
+                Some(vec![("unitCode", QUANTITY_UNIT_CODE_HOUR)]),
                 &rounded_string(element.quantity),
             ),
             create_element_with_currency(
                 currency,
                 "cbc:LineExtensionAmount",
-                &rounded_string(element.quantity * element.hourly_rate),
+                &rounded_string(element.quantity * element.value),
             ),
         ]),
     );
@@ -339,7 +340,62 @@ fn create_invoice_hours_element(
         Some(vec![create_element_with_currency(
             currency,
             "cbc:PriceAmount",
-            &rounded_string(element.hourly_rate),
+            &rounded_string(element.value),
+        )]),
+    ));
+
+    Ok(line_element)
+}
+
+fn create_invoice_others_element(
+    id: &str,
+    currency: &str,
+    vat_percent: f32,
+    element: InvoiceLineElement,
+) -> Result<XmlElement, Box<dyn std::error::Error>> {
+    let mut line_element = XmlElement::new(
+        "cac:InvoiceLine",
+        None,
+        Some(vec![
+            XmlElement::new_leaf("cbc:ID", None, id),
+            XmlElement::new_leaf(
+                "cbc:InvoicedQuantity",
+                Some(vec![("unitCode", QUANTITY_UNIT_CODE_ONE)]),
+                &rounded_string(element.quantity),
+            ),
+            create_element_with_currency(
+                currency,
+                "cbc:LineExtensionAmount",
+                &rounded_string(element.quantity * element.value),
+            ),
+        ]),
+    );
+
+    if element.date.is_some() {
+        let date = NaiveDate::parse_from_str(&element.date.unwrap(), "%Y-%m-%d")?;
+
+        line_element.push_child(create_invoice_period_element(&Period {
+            start: date,
+            end: date,
+        }));
+    }
+
+    line_element.push_child(XmlElement::new(
+        "cac:Item",
+        None,
+        Some(vec![
+            XmlElement::new_leaf("cbc:Name", None, &element.name),
+            create_classified_tax_category_element(vat_percent),
+        ]),
+    ));
+
+    line_element.push_child(XmlElement::new(
+        "cac:Price",
+        None,
+        Some(vec![create_element_with_currency(
+            currency,
+            "cbc:PriceAmount",
+            &rounded_string(element.value),
         )]),
     ));
 
@@ -353,16 +409,24 @@ fn create_invoice_hours_element(
 /// * `supplier` - The supplier information (name, address, contact, bank data).
 /// * `buyer` - The buyer information (name, address, contact).
 /// * `bill` - The bill metadata (invoice number, issue date, due date, currency).
-/// * `invoice_hours` - A vector of `InvoiceHoursElement` representing the hours worked and their rates.
+/// * `invoice_hours` - A vector of `InvoiceLineElement` representing the hours worked and their rates.
+/// * `invoice_others` - A vector of `InvoiceLineElement` representing other billed items and their values.
 pub fn create(
     supplier: Supplier,
     buyer: Buyer,
     bill: Bill,
-    invoice_hours: Vec<InvoiceHoursElement>,
+    invoice_hours: Vec<InvoiceLineElement>,
+    invoice_others: Option<Vec<InvoiceLineElement>>,
 ) -> Result<XmlElement, Box<dyn std::error::Error>> {
+    // convert 'none' option to empty vector
+    let invoice_others = invoice_others.unwrap_or(Vec::new());
+
     let mut value = 0.0;
     for line in &invoice_hours {
-        value += line.quantity * line.hourly_rate;
+        value += line.quantity * line.value;
+    }
+    for line in &invoice_others {
+        value += line.quantity * line.value;
     }
 
     let mut root = create_root_element();
@@ -408,13 +472,22 @@ pub fn create(
     root.push_child(create_legal_monetary_total_element(&bill, value));
 
     let mut count = 0;
-    for invoice_hours_element in invoice_hours {
+    for invoice_element in invoice_hours {
         count += 1;
         root.push_child(create_invoice_hours_element(
             &count.to_string(),
             &bill.currency,
             bill.vat_percent,
-            invoice_hours_element,
+            invoice_element,
+        )?);
+    }
+    for invoice_element in invoice_others {
+        count += 1;
+        root.push_child(create_invoice_others_element(
+            &count.to_string(),
+            &bill.currency,
+            bill.vat_percent,
+            invoice_element,
         )?);
     }
 

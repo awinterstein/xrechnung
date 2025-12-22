@@ -8,7 +8,7 @@ use clap::Parser;
 use csv;
 use std::fs::File;
 
-use xrechnung::data::{Bill, InvoiceHoursElement, Period};
+use xrechnung::data::{Bill, InvoiceLineElement, Period};
 
 /// Command line tool to create an XRechnung invoice from a CSV file with invoice hours.
 #[derive(Parser, Debug)]
@@ -30,9 +30,13 @@ struct Args {
     #[arg(short = 'd', long)]
     issue_date: NaiveDate,
 
-    /// CSV file that contains the invoice lines
+    /// CSV file that contains invoice lines of type 'billed hours'
     #[arg(short = 'l', long)]
     invoice_hours: String,
+
+    /// CSV file that contains invoice lines of type 'other'
+    #[arg(long)]
+    invoice_others: Option<String>,
 
     /// Output XML file for the invoice to be written
     #[arg(short, long)]
@@ -41,8 +45,8 @@ struct Args {
 
 fn read_invoice_hours(
     file_name: &str,
-) -> Result<Vec<InvoiceHoursElement>, Box<dyn std::error::Error>> {
-    let mut invoice_hours: Vec<InvoiceHoursElement> = Vec::new();
+) -> Result<Vec<InvoiceLineElement>, Box<dyn std::error::Error>> {
+    let mut invoice_hours: Vec<InvoiceLineElement> = Vec::new();
     let file = File::open(file_name)?;
 
     for result in csv::Reader::from_reader(file).deserialize() {
@@ -52,13 +56,31 @@ fn read_invoice_hours(
     Ok(invoice_hours)
 }
 
+fn read_invoice_others(
+    file_name: &str,
+) -> Result<Vec<InvoiceLineElement>, Box<dyn std::error::Error>> {
+    let mut invoice_others: Vec<InvoiceLineElement> = Vec::new();
+    let file = File::open(file_name)?;
+
+    for result in csv::Reader::from_reader(file).deserialize() {
+        invoice_others.push(result?);
+    }
+
+    Ok(invoice_others)
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // parse command line arguments and load configuration based on them
     let args = Args::parse();
     let config = xrechnung::config::load(&args.config, &args.buyer)?;
 
-    // read the invoice hours from the given CSV file
+    // read the invoice hours and others from the given CSV file
     let invoice_hours = read_invoice_hours(&args.invoice_hours)?;
+    let invoice_others = if args.invoice_others.is_some() {
+        Some(read_invoice_others(&args.invoice_others.unwrap())?)
+    } else {
+        None
+    };
 
     // the start of the billing period is either the first date of the invoice hours, or if that does not exist
     // then the billing period is the first day of the month of the issue date of the bill
@@ -79,7 +101,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // create XML structure for the invoice from the supplier, buyer, invoice metadata and invoice hours
-    let xml_root = xrechnung::create(config.supplier, config.buyer, bill, invoice_hours)?;
+    let xml_root = xrechnung::create(
+        config.supplier,
+        config.buyer,
+        bill,
+        invoice_hours,
+        invoice_others,
+    )?;
 
     // finally write the XML structure to a file
     xrechnung::write(&args.output, &xml_root)

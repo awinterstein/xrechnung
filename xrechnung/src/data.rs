@@ -38,15 +38,15 @@ pub struct Bill {
 /// Data structure representing an invoice line item for hours worked.
 /// From a list of those items, the billable amount for the invoice is calculated.
 #[derive(Deserialize)]
-pub struct InvoiceHoursElement {
+pub struct InvoiceLineElement {
     /// The name / description of the line item, e.g., "Development", "Consulting", etc.
     pub name: String,
 
-    /// The quantity of hours worked for this line item.
+    /// The quantity of hours worked or of items for this line item.
     pub quantity: f32,
 
-    /// The hourly rate for this line item in the specified currency.
-    pub hourly_rate: f32,
+    /// The value (hourly rate, price) for this line item in the specified currency.
+    pub value: f32,
 
     /// The date of the line item in ISO 8601 format (YYYY-MM-DD), if applicable.
     pub date: Option<String>,

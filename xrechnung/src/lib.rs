@@ -37,22 +37,22 @@
 //! // create some invoice hours elements
 //! // those elements could also be read from a CSV file or other data source
 //! let invoice_hours = vec![
-//!     xrechnung::data::InvoiceHoursElement {
+//!     xrechnung::data::InvoiceLineElement {
 //!         name: "Example Service".to_string(),
 //!         quantity: 7.0,
-//!         hourly_rate: 110.0,
+//!         value: 110.0,
 //!         date: Some("2025-01-02".to_string()),
 //!     },
-//!     xrechnung::data::InvoiceHoursElement {
+//!     xrechnung::data::InvoiceLineElement {
 //!         name: "Another Service".to_string(),
 //!         quantity: 6.5,
-//!         hourly_rate: 110.0,
+//!         value: 110.0,
 //!         date: Some("2025-01-03".to_string()),
 //!     },
 //! ];
 //!
 //! // create XML structure for the invoice from the supplier, buyer, invoice metadata and invoice hours
-//! let xml_root = xrechnung::create(config.supplier, config.buyer, bill, invoice_hours)?;
+//! let xml_root = xrechnung::create(config.supplier, config.buyer, bill, invoice_hours, None)?;
 //!
 //! // finally write the XML structure to a file
 //! xrechnung::write("invoice.xml", &xml_root)?;

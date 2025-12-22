@@ -38,22 +38,22 @@ let bill = xrechnung::data::Bill::new(
 // create some invoice hours elements
 // those elements could also be read from a CSV file or other data source
 let invoice_hours = vec![
-    xrechnung::data::InvoiceHoursElement {
+    xrechnung::data::InvoiceLineElement {
         name: "Example Service".to_string(),
         quantity: 7.0,
-        hourly_rate: 110.0,
+        value: 110.0,
         date: Some("2025-01-02".to_string()),
     },
-    xrechnung::data::InvoiceHoursElement {
+    xrechnung::data::InvoiceLineElement {
         name: "Another Service".to_string(),
         quantity: 6.5,
-        hourly_rate: 110.0,
+        value: 110.0,
         date: Some("2025-01-03".to_string()),
     },
 ];
 
 // create XML structure for the invoice from the supplier, buyer, invoice metadata and invoice hours
-let xml_root = xrechnung::create(config.supplier, config.buyer, bill, invoice_hours)?;
+let xml_root = xrechnung::create(config.supplier, config.buyer, bill, invoice_hours, None)?;
 
 // finally write the XML structure to a file
 xrechnung::write("invoice.xml", &xml_root)?;
@@ -114,17 +114,18 @@ This repository also contains a command line application for generating XRechnun
 ```
 Command line tool to create an XRechnung invoice from a CSV file with invoice hours
 
-Usage: xrechnung_cmd --invoice-id <INVOICE_ID> --config <CONFIG> --buyer <BUYER> --issue-date <ISSUE_DATE> --invoice-hours <INVOICE_HOURS> --output <OUTPUT>
+Usage: xrechnung_cmd [OPTIONS] --invoice-id <INVOICE_ID> --config <CONFIG> --buyer <BUYER> --issue-date <ISSUE_DATE> --invoice-hours <INVOICE_HOURS> --output <OUTPUT>
 
 Options:
-  -i, --invoice-id <INVOICE_ID>        The unique number of the invoice
-  -c, --config <CONFIG>                Config file that provides supplier and buyer information
-  -b, --buyer <BUYER>                  Buyer of the invoice
-  -d, --issue-date <ISSUE_DATE>        Issue date of the invoice
-  -l, --invoice-hours <INVOICE_HOURS>  CSV file that contains the invoice lines
-  -o, --output <OUTPUT>                Output XML file for the invoice to be written
-  -h, --help                           Print help
-  -V, --version                        Print version
+  -i, --invoice-id <INVOICE_ID>          The unique number of the invoice
+  -c, --config <CONFIG>                  Config file that provides supplier and buyer information
+  -b, --buyer <BUYER>                    Buyer of the invoice
+  -d, --issue-date <ISSUE_DATE>          Issue date of the invoice
+  -l, --invoice-hours <INVOICE_HOURS>    CSV file that contains invoice lines of type 'billed hours'
+      --invoice-others <INVOICE_OTHERS>  CSV file that contains invoice lines of type 'other'
+  -o, --output <OUTPUT>                  Output XML file for the invoice to be written
+  -h, --help                             Print help
+  -V, --version                          Print version
 ```
 
 The invoice hours CSV file (also available at [xrechnung_cmd/examples/invoice-lines.csv](xrechnung_cmd/examples/invoice-lines.csv)) could look like this then:
