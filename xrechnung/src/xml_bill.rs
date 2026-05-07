@@ -72,7 +72,11 @@ fn create_supplier_element(supplier: &Supplier) -> XmlElement {
                     &supplier.name,
                     Some(supplier.tax_identification.as_ref()),
                 ),
-                create_contact_element(&supplier.name, &supplier.phone, &supplier.email),
+                create_contact_element(
+                    &supplier.name,
+                    Some(&supplier.phone),
+                    Some(&supplier.email),
+                ),
             ]),
         )]),
     )
@@ -90,6 +94,11 @@ fn create_buyer_element(buyer: &Buyer) -> XmlElement {
                 create_endpoint_id_element(ENDPOINT_SCHEME_ID, &buyer.email),
                 create_address_element(&buyer.address),
                 create_legal_entity_element(&buyer.name, buyer.tax_identification.as_deref()),
+                create_contact_element(
+                    &buyer.contact.name,
+                    buyer.contact.phone.as_deref(),
+                    buyer.contact.email.as_deref(),
+                ),
             ]),
         )]),
     )
@@ -280,16 +289,22 @@ fn create_legal_entity_element(name: &str, id: Option<&str>) -> XmlElement {
     XmlElement::new("cac:PartyLegalEntity", None, Some(children))
 }
 
-fn create_contact_element(name: &str, phone: &str, email: &str) -> XmlElement {
-    XmlElement::new(
-        "cac:Contact",
-        None,
-        Some(vec![
-            XmlElement::new_leaf("cbc:Name", None, name),
-            XmlElement::new_leaf("cbc:Telephone", None, phone),
-            XmlElement::new_leaf("cbc:ElectronicMail", None, email),
-        ]),
-    )
+fn create_contact_element(name: &str, phone: Option<&str>, email: Option<&str>) -> XmlElement {
+    let mut children = vec![XmlElement::new_leaf("cbc:Name", None, name)];
+
+    if phone.is_some() {
+        children.push(XmlElement::new_leaf("cbc:Telephone", None, phone.unwrap()));
+    }
+
+    if email.is_some() {
+        children.push(XmlElement::new_leaf(
+            "cbc:ElectronicMail",
+            None,
+            email.unwrap(),
+        ));
+    }
+
+    XmlElement::new("cac:Contact", None, Some(children))
 }
 
 fn create_invoice_hours_element(

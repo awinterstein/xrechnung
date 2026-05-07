@@ -22,6 +22,19 @@
 use serde::Deserialize;
 use std::fs;
 
+/// Contact data with name and optional phone and email.
+#[derive(Deserialize)]
+pub struct Contact {
+    /// The full name of the contact.
+    pub name: String,
+
+    /// The optional phone number of the contact.
+    pub phone: Option<String>,
+
+    /// The optional email address of the contact.
+    pub email: Option<String>,
+}
+
 /// Address data for the supplier and buyer.
 #[derive(Deserialize)]
 pub struct Address {
@@ -90,6 +103,9 @@ pub struct Buyer {
     /// After how many days invoices for this buyer are due. This is used to calculated the due date of the invoice
     /// based on the issue date.
     pub due_after_days: i16,
+
+    /// The contact person at the buyer (e.g., the purchaser).
+    pub contact: Contact,
 }
 
 /// The complete configuration as deserialized from the configuration file.
